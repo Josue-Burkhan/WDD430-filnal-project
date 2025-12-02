@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProductCard } from '../../components/ProductCard';
 import { Product } from '../../server/types';
@@ -37,17 +37,46 @@ const MOCK_PRODUCTS: Product[] = [
   // Add more mock data as needed or fetch from API
 ];
 
-interface HomeProps {
-  products?: Product[];
-}
+
 
 const ITEMS_PER_PAGE = 8;
 
-export default function Home({ products: initialProducts = MOCK_PRODUCTS }: HomeProps) {
+export default function Home() {
   const router = useRouter();
   const { addToCart } = useCart();
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/products');
+        if (res.ok) {
+          const data = await res.json();
+          const mappedProducts = data.map((p: any) => ({
+            id: String(p.id),
+            name: p.name,
+            price: Number(p.price),
+            description: p.description,
+            image: p.image,
+            category: 'General', // Default or fetch categories
+            sellerId: p.sellerName || 'Unknown', // Use sellerName from join
+            stock: p.stock,
+            reviews: [],
+            isActive: Boolean(p.is_active)
+          }));
+          setProducts(mappedProducts);
+        }
+      } catch (error) {
+        console.error('Failed to fetch products', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   // Calculate price bounds based on actual data

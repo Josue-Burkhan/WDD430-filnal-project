@@ -15,7 +15,7 @@ export const Inventory: React.FC<InventoryProps> = ({ products, user, onEdit, on
   // If user is admin, show all products. If seller, show only theirs.
   // Note: products passed prop might already be filtered by the parent Dashboard component, 
   // but we add this check here for robustness if a full list is passed.
-  const displayProducts = user.role === 'admin' ? products : products.filter(p => p.sellerId === user.username);
+  const displayProducts = user.role === 'admin' ? products : products.filter(p => String(p.sellerId) === String(user.id));
 
   return (
     <div className="space-y-6">
@@ -59,8 +59,8 @@ export const Inventory: React.FC<InventoryProps> = ({ products, user, onEdit, on
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-md text-xs font-bold ${product.stock < 5
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-green-100 text-green-700'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-green-100 text-green-700'
                       }`}>
                       {product.stock} units
                     </span>

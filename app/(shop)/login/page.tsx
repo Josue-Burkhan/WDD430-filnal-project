@@ -7,56 +7,44 @@ import Link from 'next/link';
 import { LogIn, Mail, Lock, User as UserIcon, ArrowRight } from 'lucide-react';
 import { User } from '../../../server/types';
 import { useAuth } from '../../../lib/auth';
+import { useToast } from '../../../components/ui/Toast';
 
 export default function Login() {
     const router = useRouter();
     const { login } = useAuth();
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         identifier: '',
         password: ''
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const [rememberMe, setRememberMe] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        try {
+            await login(formData.identifier, formData.password, rememberMe);
+            showToast('Welcome back!', 'success');
+            // Redirect is handled in AuthProvider or we can do it here if login returns user
+            // But login is void promise. We can check user state or just redirect.
+            // Actually, better to redirect here after await.
+            // We need to know the role to redirect correctly. 
+            // The login function updates the user state, but maybe not immediately available here due to closure.
+            // However, we can fetch the user profile or just redirect to dashboard if it's an admin/seller?
+            // For now, let's redirect to home, and if they are seller/admin they can navigate to dashboard.
+            // Or better, we can decode the token or check the response if we modified login to return data.
+            // Let's assume login throws if failed.
 
-        let role: 'admin' | 'seller' | 'user' = 'user';
-        let username = formData.identifier;
-
-        // Mock role assignment based on credentials
-        if (formData.identifier === 'admin' && formData.password === 'admin') {
-            role = 'admin';
-            username = 'AdminUser';
-        } else if (formData.identifier === 'seller' && formData.password === 'seller') {
-            role = 'seller';
-            username = 'SellerUser';
-        } else if (formData.identifier === 'buyer' && formData.password === 'buyer') {
-            role = 'user';
-            username = 'BuyerUser';
-        } else {
-            // Default behavior for other inputs (simulating a normal user login)
-            username = formData.identifier.includes('@') ? formData.identifier.split('@')[0] : formData.identifier;
-        }
-
-        const mockUser: User = {
-            id: 'mock-user-id-' + Date.now(),
-            username: username,
-            email: formData.identifier.includes('@') ? formData.identifier : `${username.toLowerCase()}@example.com`,
-            role: role
-        };
-
-        login(mockUser);
-
-        // Redirect based on role
-        if (role === 'admin' || role === 'seller') {
-            router.push('/dashboard');
-        } else {
+            // To be safe and simple:
             router.push('/');
+        } catch (error: any) {
+            showToast(error.message, 'error');
         }
     };
 
     const handleForgotPassword = (e: React.MouseEvent) => {
         e.preventDefault();
-        alert("Password reset functionality coming soon!");
+        showToast("Password reset functionality coming soon!", 'info');
     };
 
     return (
@@ -108,7 +96,12 @@ export default function Login() {
 
                         <div className="flex items-center justify-between text-sm">
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" className="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                                <input
+                                    type="checkbox"
+                                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                />
                                 <span className="text-slate-600 font-medium">Remember me</span>
                             </label>
                             <button onClick={handleForgotPassword} className="text-brand-600 font-bold hover:underline">Forgot password?</button>

@@ -18,12 +18,45 @@ export default function ProductDetails() {
 
   useEffect(() => {
     if (params.id) {
-      const foundProduct = MOCK_PRODUCTS.find(p => p.id === params.id);
-      if (foundProduct) {
-        setProduct(foundProduct);
-        const foundSeller = MOCK_SELLERS.find(s => s.username === foundProduct.sellerId);
-        setSeller(foundSeller || MOCK_SELLERS[0]);
-      }
+      const fetchProduct = async () => {
+        try {
+          const res = await fetch(`http://localhost:5000/api/products/${params.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            const mappedProduct: Product = {
+              id: String(data.id),
+              name: data.name,
+              price: Number(data.price),
+              description: data.description,
+              image: data.image,
+              category: 'General',
+              sellerId: data.sellerName || 'Unknown',
+              stock: data.stock,
+              reviews: data.reviews || [],
+              isActive: Boolean(data.is_active)
+            };
+            setProduct(mappedProduct);
+
+            // Mock seller profile with real name
+            setSeller({
+              username: data.sellerName || 'Unknown',
+              bio: 'Passionate artisan creating unique handcrafted items.',
+              avatar: data.sellerAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=100',
+              bannerImage: 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?auto=format&fit=crop&q=80&w=800',
+              location: 'Global',
+              email: 'contact@example.com',
+              rating: 4.8,
+              totalSalesCount: 150,
+              joinDate: '2023',
+              tags: ['Handmade', 'Artisan']
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch product', error);
+        }
+      };
+
+      fetchProduct();
     }
   }, [params.id]);
 
@@ -139,6 +172,85 @@ export default function ProductDetails() {
                   <p className="text-xs text-slate-500">Guaranteed quality</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mt-20">
+          <h2 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
+            <MessageCircle className="text-brand-500" /> Customer Reviews
+          </h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {/* Reviews List */}
+            <div className="lg:col-span-2 space-y-8">
+              {product.reviews.length > 0 ? (
+                product.reviews.map((review) => (
+                  <div key={review.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center text-brand-600 font-bold">
+                          {review.userName.charAt(0)}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-900">{review.userName}</h4>
+                          <div className="flex text-yellow-400 text-sm">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} className={i < review.rating ? "" : "text-slate-300"} />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-sm text-slate-500">{review.date}</span>
+                    </div>
+                    <p className="text-slate-600 leading-relaxed">{review.comment}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <p className="text-slate-500">No reviews yet. Be the first to share your thoughts!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Add Review Form */}
+            <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-100 h-fit sticky top-24">
+              <h3 className="text-xl font-bold text-slate-900 mb-6">Write a Review</h3>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                alert("Review submitted! (This is a demo)");
+              }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Rating</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        className="text-yellow-400 hover:scale-110 transition-transform focus:outline-none"
+                      >
+                        <Star size={24} fill="none" className="text-slate-300 hover:text-yellow-400" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Comment</label>
+                  <textarea
+                    rows={4}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-brand-500 outline-none transition-all resize-none"
+                    placeholder="Share your experience..."
+                    required
+                  ></textarea>
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition-colors"
+                >
+                  Submit Review
+                </button>
+              </form>
             </div>
           </div>
         </div>

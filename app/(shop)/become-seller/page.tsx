@@ -7,10 +7,12 @@ import Link from 'next/link';
 import { Store, Mail, Lock, User as UserIcon, ArrowRight, MapPin } from 'lucide-react';
 import { User, SellerProfile } from '../../../server/types';
 import { useAuth } from '../../../lib/auth';
+import { useToast } from '../../../components/ui/Toast';
 
 export default function BecomeSeller() {
     const router = useRouter();
     const { register } = useAuth();
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -20,24 +22,21 @@ export default function BecomeSeller() {
         location: ''
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (formData.password !== formData.confirmPassword) {
-            alert("Passwords do not match!");
+            showToast("Passwords do not match!", 'error');
             return;
         }
 
-        const newUser: User = {
-            id: Date.now().toString(),
-            username: formData.username,
-            email: formData.email,
-            role: 'seller'
-        };
-
-        // In a real app, we would also save the SellerProfile here
-        register(newUser);
-        router.push('/dashboard');
-        alert(`Welcome to your new shop, ${formData.username}!`);
+        try {
+            await register(formData.username, formData.email, formData.password, 'seller', { location: formData.location });
+            showToast(`Welcome to your new shop, ${formData.username}!`, 'success');
+            router.push('/dashboard');
+        } catch (error: any) {
+            console.error('Registration error:', error);
+            showToast(error.message + (error.received ? ' Received: ' + JSON.stringify(error.received) : ''), 'error');
+        }
     };
 
     return (

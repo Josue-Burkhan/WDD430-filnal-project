@@ -180,30 +180,32 @@ export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products 
             <option>Last year</option>
           </select>
         </div>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={salesStats}>
-            <defs>
-              <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#0d9488" stopOpacity={0.1} />
-                <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} prefix="$" />
-            <Tooltip
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            />
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              stroke="#0d9488"
-              strokeWidth={3}
-              fillOpacity={1}
-              fill="url(#colorRevenue)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div style={{ width: '100%', height: 300 }}>
+          <ResponsiveContainer>
+            <AreaChart data={salesStats}>
+              <defs>
+                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0d9488" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} tickFormatter={(value) => `$${value}`} />
+              <Tooltip
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="#0d9488"
+                strokeWidth={3}
+                fillOpacity={1}
+                fill="url(#colorRevenue)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

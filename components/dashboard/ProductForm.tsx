@@ -6,7 +6,7 @@ import { generateProductDescription } from '../../marketplace/services/geminiSer
 interface ProductFormProps {
   initialData?: Partial<Product> | null;
   isEditing: boolean;
-  onSave: (product: Partial<Product>) => void;
+  onSave: (product: any) => void;
   onCancel: () => void;
   user: User;
 }
@@ -29,9 +29,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   });
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
+      setImageFile(null); // Reset file on edit load
     } else {
       setFormData({
         name: '',
@@ -42,6 +45,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         description: '',
         reviews: []
       });
+      setImageFile(null);
     }
   }, [initialData]);
 
@@ -61,9 +65,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     setIsGenerating(false);
   };
 
+  // ... generate description ...
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
@@ -77,16 +84,27 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name && formData.price && formData.category) {
-      const productToSave = {
-        ...formData,
-        id: isEditing && formData.id ? formData.id : Date.now().toString(),
-        // Ensure there is a fallback image if none uploaded
-        image: formData.image || 'https://images.unsplash.com/photo-1513519245088-0e12902e35a6?auto=format&fit=crop&q=80&w=800',
-        sellerId: user.username,
-        stock: Number(formData.stock) || 0,
-        reviews: formData.reviews || []
-      };
-      onSave(productToSave);
+      const data = new FormData();
+      const id = isEditing && formData.id ? formData.id : Date.now().toString();
+
+      data.append('id', id);
+      data.append('name', formData.name);
+      data.append('price', String(formData.price));
+      data.append('stock', String(formData.stock));
+      data.append('category_id', '1'); // Default, needs mapping if categories are dynamic
+      data.append('description', formData.description || '');
+      data.append('seller_id', user.id);
+
+      // Pass is_active if needed
+      data.append('is_active', '1');
+
+      if (imageFile) {
+        data.append('image', imageFile);
+      } else if (formData.image) {
+        data.append('image', formData.image);
+      }
+
+      onSave(data);
     }
   };
 

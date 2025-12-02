@@ -7,10 +7,12 @@ import Link from 'next/link';
 import { UserPlus, Mail, Lock, User as UserIcon, ArrowRight } from 'lucide-react';
 import { User } from '../../../server/types';
 import { useAuth } from '../../../lib/auth';
+import { useToast } from '../../../components/ui/Toast';
 
 export default function Register() {
     const router = useRouter();
     const { register } = useAuth();
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -18,22 +20,20 @@ export default function Register() {
         confirmPassword: ''
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (formData.password !== formData.confirmPassword) {
-            alert("Passwords do not match!");
+            showToast("Passwords do not match!", 'error');
             return;
         }
 
-        const newUser: User = {
-            id: Date.now().toString(),
-            username: formData.username,
-            email: formData.email,
-            role: 'user'
-        };
-
-        register(newUser);
-        router.push('/');
+        try {
+            await register(formData.username, formData.email, formData.password, 'user');
+            showToast('Account created successfully!', 'success');
+            router.push('/');
+        } catch (error: any) {
+            showToast(error.message, 'error');
+        }
     };
 
     return (
