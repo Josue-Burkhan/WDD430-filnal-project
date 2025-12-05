@@ -44,6 +44,7 @@ export interface SalesStat {
 }
 
 export interface SellerProfile {
+    user_id: string;
     username: string;
     bio: string;
     avatar: string;

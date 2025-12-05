@@ -18,6 +18,38 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Rate Seller
+router.post('/seller', async (req, res) => {
+    try {
+        const { seller_id, user_id, rating } = req.body;
+
+        // Insert or Update Review (Upsert)
+        await pool.query(
+            `INSERT INTO seller_reviews (seller_id, user_id, rating) 
+             VALUES (?, ?, ?) 
+             ON DUPLICATE KEY UPDATE rating = VALUES(rating)`,
+            [seller_id, user_id, rating]
+        );
+
+        // Recalculate Average Rating
+        const [rows] = await pool.query<any[]>(
+            'SELECT AVG(rating) as avgRating FROM seller_reviews WHERE seller_id = ?',
+            [seller_id]
+        );
+        const avgRating = rows[0].avgRating || 0;
+
+        // Update Seller Profile
+        await pool.query(
+            'UPDATE seller_profiles SET rating = ? WHERE user_id = ?',
+            [avgRating, seller_id]
+        );
+
+        res.json({ message: 'Seller rated successfully', newRating: avgRating });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Error rating seller', error: error.message });
+    }
+});
+
 // Get Reviews by Product
 router.get('/product/:productId', async (req, res) => {
     try {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Upload, Sparkles, Save } from 'lucide-react';
+import { ArrowLeft, Upload, Save } from 'lucide-react';
 import { Product, User } from '../../server/types';
-import { generateProductDescription } from '../../marketplace/services/geminiService';
 
 interface ProductFormProps {
   initialData?: Partial<Product> | null;
@@ -27,7 +26,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     description: '',
     reviews: []
   });
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -48,24 +46,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       setImageFile(null);
     }
   }, [initialData]);
-
-  const handleGenerateDescription = async () => {
-    if (!formData.name || !formData.category) {
-      alert("Please enter a name and category first.");
-      return;
-    }
-    setIsGenerating(true);
-    try {
-      const desc = await generateProductDescription(formData.name, formData.category);
-      setFormData(prev => ({ ...prev, description: desc }));
-    } catch (error) {
-      console.error("Error generating description:", error);
-      alert("Failed to generate description. Please try again.");
-    }
-    setIsGenerating(false);
-  };
-
-  // ... generate description ...
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -218,15 +198,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-bold text-slate-700">Description</label>
-                <button
-                  type="button"
-                  onClick={handleGenerateDescription}
-                  disabled={isGenerating}
-                  className="text-xs flex items-center gap-1.5 text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg hover:bg-brand-100 font-bold transition-colors disabled:opacity-50"
-                >
-                  <Sparkles size={14} />
-                  {isGenerating ? 'Generating...' : 'Enhance with AI'}
-                </button>
               </div>
               <textarea
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none h-32 text-sm leading-relaxed"

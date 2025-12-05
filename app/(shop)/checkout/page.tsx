@@ -7,13 +7,19 @@ import { CreditCard, MapPin, Truck, CheckCircle, ArrowLeft, Lock } from 'lucide-
 import { useCart } from '../../../lib/cart';
 import { useAuth } from '../../../lib/auth';
 import { Order, Address } from '../../../server/types';
+import { useToast } from '../../../components/ui/Toast';
 
 export default function Checkout() {
     const router = useRouter();
     const { cart, clearCart } = useCart();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
+    const { showToast } = useToast();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+
+    const [cardNumber, setCardNumber] = useState('');
+    const [cardExpiry, setCardExpiry] = useState('');
+    const [cardCvc, setCardCvc] = useState('');
 
     const [address, setAddress] = useState<Address>({
         fullName: '',
@@ -23,11 +29,59 @@ export default function Checkout() {
         country: ''
     });
 
+    // Load saved payment details
     useEffect(() => {
-        if (cart.length === 0) {
+        const savedCard = localStorage.getItem('temp_card_number');
+        const savedExpiry = localStorage.getItem('temp_card_expiry');
+        const savedCvc = localStorage.getItem('temp_card_cvc');
+        if (savedCard) setCardNumber(savedCard);
+        if (savedExpiry) setCardExpiry(savedExpiry);
+        if (savedCvc) setCardCvc(savedCvc);
+    }, []);
+
+    // Fetch saved address
+    useEffect(() => {
+        const fetchAddress = async () => {
+            if (user) {
+                try {
+                    const res = await fetch(`http://localhost:5000/api/profiles/buyer/${user.id}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.shippingAddress) {
+                            setAddress(data.shippingAddress);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch address', error);
+                }
+            }
+        };
+        fetchAddress();
+    }, [user]);
+
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/login?redirect=/checkout');
+        }
+    }, [authLoading, user, router]);
+
+    useEffect(() => {
+        if (!authLoading && user && cart.length === 0) {
             router.push('/cart');
         }
-    }, [cart, router]);
+    }, [cart, router, authLoading, user]);
+
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null; // Will redirect
+    }
 
     if (cart.length === 0) {
         return null;
@@ -40,33 +94,45 @@ export default function Checkout() {
 
     const handlePlaceOrder = async () => {
         setLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const newOrder: Order = {
-            id: Date.now().toString(),
-            buyerUsername: user?.username || 'guest',
-            customerName: address.fullName,
-            date: new Date().toISOString().split('T')[0],
-            status: 'Pending',
-            items: cart.map(item => ({
-                productId: item.product.id,
-                productName: item.product.name,
-                productImage: item.product.image,
-                quantity: item.quantity,
-                price: item.product.price
-            })),
-            shippingAddress: address,
-            subtotal,
-            tax,
-            shippingCost: shipping,
-            total
-        };
+        try {
+            const orderData = {
+                id: Date.now().toString(),
+                buyer_id: user?.id,
+                customer_name: address.fullName,
+                subtotal,
+                tax,
+                shipping_cost: shipping,
+                total,
+                shipping_address: address,
+                items: cart.map(item => ({
+                    productId: item.product.id,
+                    productName: item.product.name,
+                    productImage: item.product.image,
+                    quantity: item.quantity,
+                    price: item.product.price
+                }))
+            };
 
-        clearCart();
-        setLoading(false);
-        alert("Success! Your order has been placed.");
-        router.push('/');
+            const res = await fetch('http://localhost:5000/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
+
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || 'Failed to place order');
+            }
+
+            clearCart();
+            setLoading(false);
+            showToast("Success! Your order has been placed.", 'success');
+            router.push('/');
+        } catch (error: any) {
+            setLoading(false);
+            showToast(`Error: ${error.message}`, 'error');
+        }
     };
 
     if (cart.length === 0) {
@@ -174,21 +240,48 @@ export default function Checkout() {
                                 <span className="font-bold text-brand-900">Credit / Debit Card</span>
                             </div>
 
-                            <div className="space-y-4 opacity-50 pointer-events-none">
+                            <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-2">Card Number</label>
-                                    <input placeholder="0000 0000 0000 0000" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                                    <input
+                                        placeholder="0000 0000 0000 0000"
+                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl"
+                                        value={cardNumber}
+                                        onChange={(e) => {
+                                            setCardNumber(e.target.value);
+                                            localStorage.setItem('temp_card_number', e.target.value);
+                                        }}
+                                    />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-2">Expiry</label>
-                                        <input placeholder="MM/YY" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                                        <input
+                                            placeholder="MM/YY"
+                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl"
+                                            value={cardExpiry}
+                                            onChange={(e) => {
+                                                setCardExpiry(e.target.value);
+                                                localStorage.setItem('temp_card_expiry', e.target.value);
+                                            }}
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-2">CVC</label>
-                                        <input placeholder="123" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                                        <input
+                                            placeholder="123"
+                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl"
+                                            value={cardCvc}
+                                            onChange={(e) => {
+                                                setCardCvc(e.target.value);
+                                                localStorage.setItem('temp_card_cvc', e.target.value);
+                                            }}
+                                        />
                                     </div>
                                 </div>
+                                <p className="text-xs text-amber-600 mt-2 bg-amber-50 p-2 rounded border border-amber-200">
+                                    Note: This is a demo. Payment details are only saved to your browser's local storage and are not processed.
+                                </p>
                             </div>
 
                             <div className="flex gap-4 mt-8">

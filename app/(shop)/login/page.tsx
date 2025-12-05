@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { LogIn, Mail, Lock, User as UserIcon, ArrowRight } from 'lucide-react';
 import { User } from '../../../server/types';
@@ -11,6 +11,8 @@ import { useToast } from '../../../components/ui/Toast';
 
 export default function Login() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirect = searchParams.get('redirect');
     const { login } = useAuth();
     const { showToast } = useToast();
     const [formData, setFormData] = useState({
@@ -25,18 +27,7 @@ export default function Login() {
         try {
             await login(formData.identifier, formData.password, rememberMe);
             showToast('Welcome back!', 'success');
-            // Redirect is handled in AuthProvider or we can do it here if login returns user
-            // But login is void promise. We can check user state or just redirect.
-            // Actually, better to redirect here after await.
-            // We need to know the role to redirect correctly. 
-            // The login function updates the user state, but maybe not immediately available here due to closure.
-            // However, we can fetch the user profile or just redirect to dashboard if it's an admin/seller?
-            // For now, let's redirect to home, and if they are seller/admin they can navigate to dashboard.
-            // Or better, we can decode the token or check the response if we modified login to return data.
-            // Let's assume login throws if failed.
-
-            // To be safe and simple:
-            router.push('/');
+            router.push(redirect || '/');
         } catch (error: any) {
             showToast(error.message, 'error');
         }
@@ -117,7 +108,7 @@ export default function Login() {
 
                     <p className="text-center mt-8 text-slate-600">
                         Don't have an account?{' '}
-                        <Link href="/register" className="text-brand-600 font-bold hover:underline">
+                        <Link href={redirect ? `/register?redirect=${redirect}` : '/register'} className="text-brand-600 font-bold hover:underline">
                             Sign up
                         </Link>
                     </p>

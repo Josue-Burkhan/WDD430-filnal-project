@@ -1,20 +1,31 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Star, ShoppingBag, ArrowLeft, Heart, Share2, Truck, ShieldCheck, MessageCircle } from 'lucide-react';
+import { Star, ShoppingBag, ArrowLeft, Heart, Share2, Truck, ShieldCheck, MessageCircle, User as UserIcon } from 'lucide-react';
 import { Product, SellerProfile } from '../../../../server/types';
-import { MOCK_PRODUCTS, MOCK_SELLERS } from '../../../../marketplace/services/mockData';
 import { useCart } from '../../../../lib/cart';
+import { useAuth } from '../../../../lib/auth';
 
 export default function ProductDetails() {
   const params = useParams();
   const router = useRouter();
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
-  const [selectedImage, setSelectedImage] = useState(0);
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  // Zoom State
+  const [showZoom, setShowZoom] = useState(false);
+  const [zoomStyle, setZoomStyle] = useState({ backgroundPosition: '0% 0%' });
+  const [lensStyle, setLensStyle] = useState({ left: 0, top: 0, display: 'none' });
+  const imgContainerRef = useRef<HTMLDivElement>(null);
+
+  // Review Form State
+  const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState('');
 
   useEffect(() => {
     if (params.id) {
@@ -23,6 +34,7 @@ export default function ProductDetails() {
           const res = await fetch(`http://localhost:5000/api/products/${params.id}`);
           if (res.ok) {
             const data = await res.json();
+            // Store actual UUID in sellerId for comparison, use sellerName for display
             const mappedProduct: Product = {
               id: String(data.id),
               name: data.name,
@@ -30,14 +42,13 @@ export default function ProductDetails() {
               description: data.description,
               image: data.image,
               category: 'General',
-              sellerId: data.sellerName || 'Unknown',
+              sellerId: data.seller_id, // Use UUID here
               stock: data.stock,
-              reviews: data.reviews || [],
+              reviews: [],
               isActive: Boolean(data.is_active)
             };
             setProduct(mappedProduct);
 
-            // Mock seller profile with real name
             setSeller({
               username: data.sellerName || 'Unknown',
               bio: 'Passionate artisan creating unique handcrafted items.',
@@ -50,6 +61,12 @@ export default function ProductDetails() {
               joinDate: '2023',
               tags: ['Handmade', 'Artisan']
             });
+
+            const reviewsRes = await fetch(`http://localhost:5000/api/reviews/product/${params.id}`);
+            if (reviewsRes.ok) {
+              const reviewsData = await reviewsRes.json();
+              setReviews(reviewsData);
+            }
           }
         } catch (error) {
           console.error('Failed to fetch product', error);
@@ -59,6 +76,78 @@ export default function ProductDetails() {
       fetchProduct();
     }
   }, [params.id]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imgContainerRef.current) return;
+
+    const { left, top, width, height } = imgContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
+
+    // Lens size (e.g., 100x100)
+    const lensSize = 100;
+    const halfLens = lensSize / 2;
+
+    // Calculate lens position (clamped)
+    let lensX = x - halfLens;
+    let lensY = y - halfLens;
+
+    if (lensX < 0) lensX = 0;
+    if (lensX > width - lensSize) lensX = width - lensSize;
+    if (lensY < 0) lensY = 0;
+    if (lensY > height - lensSize) lensY = height - lensSize;
+
+    setLensStyle({ left: lensX, top: lensY, display: 'block' });
+
+    // Calculate zoom background position
+    // Ratio of lens position to container size
+    const xPercent = (lensX / (width - lensSize)) * 100;
+    const yPercent = (lensY / (height - lensSize)) * 100;
+
+    setZoomStyle({ backgroundPosition: `${xPercent}% ${yPercent}%` });
+  };
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:5000/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: Date.now().toString(),
+          product_id: product?.id,
+          user_id: user.id,
+          rating,
+          title: 'Review',
+          comment
+        })
+      });
+
+      if (res.ok) {
+        alert('Review submitted!');
+        const reviewsRes = await fetch(`http://localhost:5000/api/reviews/product/${product?.id}`);
+        if (reviewsRes.ok) {
+          const reviewsData = await reviewsRes.json();
+          setReviews(reviewsData);
+        }
+        setComment('');
+        setRating(5);
+      } else {
+        alert('Failed to submit review');
+      }
+    } catch (error) {
+      console.error('Error submitting review', error);
+    }
+  };
+
+  const averageRating = reviews.length > 0
+    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
+    : '0.0';
 
   if (!product || !seller) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -74,27 +163,49 @@ export default function ProductDetails() {
           <ArrowLeft size={20} className="mr-2" /> Back to Browse
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16">
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="aspect-square bg-slate-100 rounded-3xl overflow-hidden shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16 relative">
+          {/* Zoomable Image Container */}
+          <div className="relative z-10">
+            <div
+              ref={imgContainerRef}
+              className="aspect-square bg-slate-100 rounded-3xl overflow-hidden shadow-sm cursor-crosshair relative"
+              onMouseEnter={() => setShowZoom(true)}
+              onMouseLeave={() => { setShowZoom(false); setLensStyle(prev => ({ ...prev, display: 'none' })); }}
+              onMouseMove={handleMouseMove}
+            >
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover"
               />
+              {/* The Lens */}
+              {showZoom && (
+                <div
+                  className="absolute border-2 border-brand-500 bg-brand-500/10 pointer-events-none"
+                  style={{
+                    width: '100px',
+                    height: '100px',
+                    left: lensStyle.left,
+                    top: lensStyle.top,
+                    display: lensStyle.display
+                  }}
+                />
+              )}
             </div>
-            <div className="grid grid-cols-4 gap-4">
-              {[product.image, product.image, product.image, product.image].map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(idx)}
-                  className={`aspect-square rounded-xl overflow-hidden border-2 transition-all ${selectedImage === idx ? 'border-brand-500 ring-2 ring-brand-500/20' : 'border-transparent hover:border-slate-200'}`}
-                >
-                  <img src={img} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+
+            {/* Zoom Result Window (Absolute positioned next to image) */}
+            {showZoom && (
+              <div
+                className="absolute top-0 left-[105%] w-[500px] h-[500px] bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden hidden lg:block z-50"
+                style={{
+                  backgroundImage: `url(${product.image})`,
+                  backgroundSize: '250%', // Magnification level
+                  backgroundPosition: zoomStyle.backgroundPosition,
+                  backgroundRepeat: 'no-repeat'
+                }}
+              />
+            )}
+            <p className="text-center text-slate-400 text-sm mt-4 lg:hidden">Tap image to view details</p>
           </div>
 
           {/* Product Info */}
@@ -109,8 +220,8 @@ export default function ProductDetails() {
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center text-yellow-400">
                   <Star size={18} fill="currentColor" />
-                  <span className="text-slate-700 font-bold ml-1">4.8</span>
-                  <span className="text-slate-400 ml-1">(124 reviews)</span>
+                  <span className="text-slate-700 font-bold ml-1">{averageRating}</span>
+                  <span className="text-slate-400 ml-1">({reviews.length} reviews)</span>
                 </div>
                 <span className="text-slate-300">|</span>
                 <span className="text-green-600 font-medium flex items-center gap-1">
@@ -121,9 +232,6 @@ export default function ProductDetails() {
 
             <div className="flex items-end gap-4 mb-8">
               <span className="text-4xl font-black text-slate-900">${product.price.toFixed(2)}</span>
-              {product.price > 100 && (
-                <span className="text-lg text-slate-400 line-through mb-1.5">${(product.price * 1.2).toFixed(2)}</span>
-              )}
             </div>
 
             <p className="text-slate-600 text-lg leading-relaxed mb-8">
@@ -155,24 +263,6 @@ export default function ProductDetails() {
                 <Heart size={24} />
               </button>
             </div>
-
-            {/* Features */}
-            <div className="grid grid-cols-2 gap-4 mt-8 pt-8 border-t border-slate-100">
-              <div className="flex items-start gap-3">
-                <Truck className="text-brand-500 mt-1" size={20} />
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Free Shipping</h4>
-                  <p className="text-xs text-slate-500">On orders over $100</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="text-brand-500 mt-1" size={20} />
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Buyer Protection</h4>
-                  <p className="text-xs text-slate-500">Guaranteed quality</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -185,28 +275,40 @@ export default function ProductDetails() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Reviews List */}
             <div className="lg:col-span-2 space-y-8">
-              {product.reviews.length > 0 ? (
-                product.reviews.map((review) => (
-                  <div key={review.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center text-brand-600 font-bold">
-                          {review.userName.charAt(0)}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-slate-900">{review.userName}</h4>
-                          <div className="flex text-yellow-400 text-sm">
-                            {[...Array(5)].map((_, i) => (
-                              <Star key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} className={i < review.rating ? "" : "text-slate-300"} />
-                            ))}
+              {reviews.length > 0 ? (
+                reviews.map((review) => {
+                  const isSeller = String(review.user_id) === String(product.sellerId);
+                  return (
+                    <div key={review.id} className={`p-6 rounded-2xl border ${isSeller ? 'bg-brand-50 border-brand-200' : 'bg-slate-50 border-slate-100'}`}>
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${isSeller ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                            {review.userName ? review.userName.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className={`font-bold ${isSeller ? 'text-brand-700' : 'text-slate-900'}`}>
+                                {review.userName || 'Anonymous'}
+                              </h4>
+                              {isSeller && (
+                                <span className="text-xs bg-brand-200 text-brand-800 px-2 py-0.5 rounded-full font-bold">
+                                  Seller
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex text-yellow-400 text-sm">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} className={i < review.rating ? "" : "text-slate-300"} />
+                              ))}
+                            </div>
                           </div>
                         </div>
+                        <span className="text-sm text-slate-500">{new Date(review.created_at).toLocaleDateString()}</span>
                       </div>
-                      <span className="text-sm text-slate-500">{review.date}</span>
+                      <p className="text-slate-600 leading-relaxed">{review.comment}</p>
                     </div>
-                    <p className="text-slate-600 leading-relaxed">{review.comment}</p>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   <p className="text-slate-500">No reviews yet. Be the first to share your thoughts!</p>
@@ -217,40 +319,71 @@ export default function ProductDetails() {
             {/* Add Review Form */}
             <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-100 h-fit sticky top-24">
               <h3 className="text-xl font-bold text-slate-900 mb-6">Write a Review</h3>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                alert("Review submitted! (This is a demo)");
-              }} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Rating</label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        className="text-yellow-400 hover:scale-110 transition-transform focus:outline-none"
-                      >
-                        <Star size={24} fill="none" className="text-slate-300 hover:text-yellow-400" />
-                      </button>
-                    ))}
+              {!user ? (
+                <div className="text-center">
+                  <p className="text-slate-500 mb-4">Please login to write a review.</p>
+                  <button
+                    onClick={() => router.push('/login')}
+                    className="bg-brand-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-brand-700 transition-colors"
+                  >
+                    Login
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleReviewSubmit} className="space-y-6">
+                  {/* Commenting As */}
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                    <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center text-brand-600 font-bold text-sm">
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 font-bold uppercase">Commenting as</p>
+                      <p className="text-sm font-bold text-slate-900">{user.username}</p>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Comment</label>
-                  <textarea
-                    rows={4}
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-brand-500 outline-none transition-all resize-none"
-                    placeholder="Share your experience..."
-                    required
-                  ></textarea>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition-colors"
-                >
-                  Submit Review
-                </button>
-              </form>
+
+                  {/* Interactive Star Rating */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Rating</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setRating(star)}
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          className="transition-transform hover:scale-110 focus:outline-none"
+                        >
+                          <Star
+                            size={32}
+                            fill={(hoverRating || rating) >= star ? "currentColor" : "none"}
+                            className={(hoverRating || rating) >= star ? "text-yellow-400" : "text-slate-300"}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Comment</label>
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      rows={4}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-brand-500 outline-none transition-all resize-none"
+                      placeholder="Share your experience..."
+                      required
+                    ></textarea>
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition-colors"
+                  >
+                    Submit Review
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>

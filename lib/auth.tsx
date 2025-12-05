@@ -10,6 +10,7 @@ interface AuthContextType {
     logout: () => void;
     register: (username: string, email: string, password: string, role: 'user' | 'seller', additionalData?: { location?: string }) => Promise<void>;
     isAuthenticated: boolean;
+    loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,7 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const checkAuth = async () => {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             if (token) {
                 try {
                     const res = await fetch('http://localhost:5000/api/users/me', {
@@ -97,8 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated: !!user }}>
-            {!loading && children}
+        <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated: !!user, loading }}>
+            {children}
         </AuthContext.Provider>
     );
 };

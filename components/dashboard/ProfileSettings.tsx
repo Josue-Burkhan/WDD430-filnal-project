@@ -4,15 +4,18 @@ import { SellerProfile } from '../../server/types';
 
 interface ProfileSettingsProps {
   sellerProfile: SellerProfile;
-  onUpdateProfile: (profile: SellerProfile) => void;
+  onUpdateProfile: (profile: SellerProfile, avatarFile: File | null, bannerFile: File | null) => void;
 }
 
 export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ sellerProfile, onUpdateProfile }) => {
   const [profileData, setProfileData] = useState<SellerProfile>(sellerProfile);
+  const [selectedAvatar, setSelectedAvatar] = useState<File | null>(null);
+  const [selectedBanner, setSelectedBanner] = useState<File | null>(null);
 
-  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedAvatar(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
@@ -23,10 +26,23 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ sellerProfile,
     }
   };
 
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedBanner(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setProfileData(prev => ({ ...prev, bannerImage: reader.result as string }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateProfile(profileData);
-    alert('Profile updated successfully!');
+    onUpdateProfile(profileData, selectedAvatar, selectedBanner);
   };
 
   return (
@@ -39,14 +55,30 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ sellerProfile,
       </div>
 
       <form onSubmit={handleProfileSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8 space-y-6">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+        {/* Banner Image */}
+        <div className="relative h-48 w-full rounded-xl overflow-hidden bg-slate-100 group">
+          <img
+            src={profileData.bannerImage || 'https://via.placeholder.com/1200x300'}
+            alt="Banner"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+            <label className="bg-white/90 text-slate-900 px-4 py-2 rounded-lg cursor-pointer font-medium shadow-lg hover:bg-white transition-colors flex items-center gap-2">
+              <Upload size={18} />
+              Change Banner
+              <input type="file" className="hidden" accept="image/*" onChange={handleBannerUpload} />
+            </label>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 -mt-12 relative z-10 px-4">
           <div className="relative group flex-shrink-0">
             <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-slate-100">
               <img src={profileData.avatar} alt="Avatar" className="w-full h-full object-cover" />
             </div>
             <label className="absolute bottom-0 right-0 bg-brand-600 text-white p-2 rounded-full cursor-pointer hover:bg-brand-700 transition-colors shadow-sm z-10">
               <Upload size={16} />
-              <input type="file" className="hidden" accept="image/*" onChange={handleProfileImageUpload} />
+              <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
             </label>
           </div>
 

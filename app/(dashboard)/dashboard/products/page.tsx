@@ -5,12 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../lib/auth';
 import { Product } from '../../../../server/types';
 import { Inventory } from '../../../../components/dashboard/Inventory';
-import { MOCK_PRODUCTS } from '../../../../marketplace/services/mockData';
 
 export default function InventoryPage() {
     const router = useRouter();
     const { user } = useAuth();
-    const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+    const [products, setProducts] = useState<Product[]>([]);
 
     useEffect(() => {
         if (user) {

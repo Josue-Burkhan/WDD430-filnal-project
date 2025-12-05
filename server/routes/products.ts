@@ -60,9 +60,10 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const query = `
-            SELECT p.*, u.username as sellerName, u.avatar as sellerAvatar
+            SELECT p.*, u.username as sellerName, sp.avatar as sellerAvatar
             FROM products p 
             JOIN users u ON p.seller_id = u.id 
+            LEFT JOIN seller_profiles sp ON u.id = sp.user_id
             WHERE p.id = ?
         `;
         const [rows] = await pool.query<RowDataPacket[]>(query, [req.params.id]);

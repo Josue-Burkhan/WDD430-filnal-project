@@ -58,7 +58,8 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM users WHERE email = ?', [email]);
+        // Check if input is email or username
+        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM users WHERE email = ? OR username = ?', [email, email]);
 
         if (rows.length === 0) {
             res.status(401).json({ message: 'Invalid credentials' });

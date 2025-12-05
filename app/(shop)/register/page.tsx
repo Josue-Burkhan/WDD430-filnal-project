@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { UserPlus, Mail, Lock, User as UserIcon, ArrowRight } from 'lucide-react';
 import { User } from '../../../server/types';
@@ -11,6 +11,8 @@ import { useToast } from '../../../components/ui/Toast';
 
 export default function Register() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirect = searchParams.get('redirect');
     const { register } = useAuth();
     const { showToast } = useToast();
     const [formData, setFormData] = useState({
@@ -30,7 +32,7 @@ export default function Register() {
         try {
             await register(formData.username, formData.email, formData.password, 'user');
             showToast('Account created successfully!', 'success');
-            router.push('/');
+            router.push(redirect || '/');
         } catch (error: any) {
             showToast(error.message, 'error');
         }
@@ -127,7 +129,7 @@ export default function Register() {
 
                     <p className="text-center mt-8 text-slate-600">
                         Already have an account?{' '}
-                        <Link href="/login" className="text-brand-600 font-bold hover:underline">
+                        <Link href={redirect ? `/login?redirect=${redirect}` : '/login'} className="text-brand-600 font-bold hover:underline">
                             Sign in
                         </Link>
                     </p>

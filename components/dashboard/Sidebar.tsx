@@ -39,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <LayoutDashboard size={20} />
           </div>
           <span className="font-bold text-lg text-white tracking-tight">
-            Artisan<span className="text-brand-500">Hub</span>
+            GenialMarket<span className="text-brand-500">Hub</span>
           </span>
         </Link>
       </div>
@@ -102,7 +102,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`w-full mt-4 flex items-center gap-3 px-4 py-3 border-t border-slate-800 rounded-xl transition-all group ${isActive('/dashboard/profile') ? 'bg-slate-800 border-transparent' : 'hover:bg-slate-800 border-transparent'}`}
         >
           <div className="relative">
-            <img src={sellerProfile.avatar} alt="Profile" className="w-9 h-9 rounded-full object-cover border border-brand-700 group-hover:border-brand-500 transition-colors" />
+            <img
+              src={sellerProfile.avatar || 'https://via.placeholder.com/150'}
+              alt="Profile"
+              className="w-9 h-9 rounded-full object-cover border border-brand-700 group-hover:border-brand-500 transition-colors"
+            />
             <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full"></div>
           </div>
           <div className="flex flex-col items-start">

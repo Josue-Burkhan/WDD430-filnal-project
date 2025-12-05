@@ -47,7 +47,10 @@ export const Orders: React.FC<OrdersProps> = ({ orders }) => {
                   <td className="px-6 py-4 font-medium text-slate-900">
                     #{order.id}
                   </td>
-                  <td className="px-6 py-4">{order.customerName}</td>
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-slate-900">{order.customerName}</div>
+                    {order.buyerUsername && <div className="text-xs text-slate-500">@{order.buyerUsername}</div>}
+                  </td>
                   <td className="px-6 py-4 flex items-center gap-2">
                     <Calendar size={14} className="text-slate-400" /> {order.date}
                   </td>
@@ -137,6 +140,7 @@ export const Orders: React.FC<OrdersProps> = ({ orders }) => {
                 <div>
                   <h3 className="font-bold text-slate-700 mb-2">Customer & Shipping</h3>
                   <p className="font-medium text-slate-900">{selectedOrder.customerName}</p>
+                  {selectedOrder.buyerUsername && <p className="text-sm text-slate-500 mb-1">@{selectedOrder.buyerUsername}</p>}
                   {selectedOrder.shippingAddress && (
                     <div className="text-sm text-slate-500 mt-1 flex items-start gap-2">
                       <MapPin size={16} className="mt-0.5 flex-shrink-0" />

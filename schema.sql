@@ -74,6 +74,17 @@ CREATE TABLE IF NOT EXISTS reviews (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS seller_reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    seller_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (seller_id) REFERENCES seller_profiles(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_seller_review (seller_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS orders (
     id VARCHAR(255) PRIMARY KEY,
     buyer_id VARCHAR(255) NOT NULL,

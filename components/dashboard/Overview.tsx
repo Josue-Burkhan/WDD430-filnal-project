@@ -1,16 +1,17 @@
 import React from 'react';
 import { DollarSign, TrendingUp, Package, BarChart3, AlertTriangle, Clock, ArrowRight, Box } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Sale, SalesStat, Product, Order } from '../../server/types';
+import { Sale, SalesStat, Product, Order, User } from '../../server/types';
 
 interface OverviewProps {
   sales: Sale[];
   salesStats: SalesStat[];
   products?: Product[];
   orders?: Order[];
+  user: User;
 }
 
-export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products = [], orders = [] }) => {
+export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products = [], orders = [], user }) => {
   const totalRevenue = sales.reduce((sum, sale) => sum + sale.amount, 0);
   const totalSales = sales.length;
   const averageOrder = totalSales > 0 ? totalRevenue / totalSales : 0;
@@ -19,6 +20,25 @@ export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products 
   const lowStockProducts = products.filter(p => p.stock < 5);
   const totalInventory = products.reduce((acc, p) => acc + (p.stock || 0), 0);
   const pendingOrders = orders.filter(o => o.status === 'Pending');
+  const [timeRange, setTimeRange] = React.useState('15d');
+  const [chartData, setChartData] = React.useState<any[]>(salesStats);
+
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+      try {
+        const res = await fetch(`http://localhost:5000/api/orders/stats/${user.id}?range=${timeRange}`);
+        if (res.ok) {
+          const data = await res.json();
+          setChartData(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats', error);
+      }
+    };
+
+    fetchStats();
+  }, [timeRange, user]);
 
   return (
     <div className="space-y-8">
@@ -79,7 +99,11 @@ export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products 
 
             <div className="space-y-3">
               {pendingOrders.slice(0, 3).map(o => (
-                <div key={o.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border-l-2 border-slate-200 hover:border-brand-500 transition-colors cursor-pointer group">
+                <div
+                  key={o.id}
+                  onClick={() => window.location.href = `/dashboard/orders`} // Simple navigation for now, or use router
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border-l-2 border-slate-200 hover:border-brand-500 transition-colors cursor-pointer group"
+                >
                   <div>
                     <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
                       #{o.id} <span className="text-slate-400">•</span> {o.customerName}
@@ -175,14 +199,19 @@ export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products 
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-[400px]">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-slate-900">Sales Performance</h3>
-          <select className="text-sm border-none bg-slate-50 rounded-lg px-3 py-1 text-slate-500 focus:ring-0 cursor-pointer">
-            <option>Last 6 months</option>
-            <option>Last year</option>
+          <select
+            className="text-sm border-none bg-slate-50 rounded-lg px-3 py-1 text-slate-500 focus:ring-0 cursor-pointer"
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+          >
+            <option value="24h">Last 24 Hours</option>
+            <option value="15d">Last 15 Days</option>
+            <option value="1y">Last Year</option>
           </select>
         </div>
         <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer>
-            <AreaChart data={salesStats}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#0d9488" stopOpacity={0.1} />
