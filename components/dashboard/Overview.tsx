@@ -1,5 +1,7 @@
+```
 import React from 'react';
-import { DollarSign, TrendingUp, Package, BarChart3, AlertTriangle, Clock, ArrowRight, Box } from 'lucide-react';
+import { DollarSign, Package, ShoppingCart, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Sale, SalesStat, Product, Order, User } from '../../server/types';
 import { API_URL } from '../../lib/config';
@@ -12,7 +14,8 @@ interface OverviewProps {
   user: User;
 }
 
-export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products = [], orders = [], user }) => {
+export default function Overview({ sales, salesStats, products = [], orders = [], user }: OverviewProps) {
+  const router = useRouter();
   const totalRevenue = sales.reduce((sum, sale) => sum + sale.amount, 0);
   const totalSales = sales.length;
   const averageOrder = totalSales > 0 ? totalRevenue / totalSales : 0;
@@ -28,7 +31,7 @@ export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products 
     const fetchStats = async () => {
       if (!user) return;
       try {
-        const res = await fetch(`${API_URL}/api/orders/stats/${user.id}?range=${timeRange}`);
+        const res = await fetch(`${ API_URL } /api/orders / stats / ${ user.id }?range = ${ timeRange } `);
         if (res.ok) {
           const data = await res.json();
           setChartData(data);
@@ -102,7 +105,8 @@ export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products 
               {pendingOrders.slice(0, 3).map(o => (
                 <div
                   key={o.id}
-                  onClick={() => window.location.href = `/dashboard/orders`} // Simple navigation for now, or use router
+                  onClick={() => router.push('/dashboard/orders')}
+                  // Use router for client-side navigation
                   className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border-l-2 border-slate-200 hover:border-brand-500 transition-colors cursor-pointer group"
                 >
                   <div>
@@ -221,7 +225,7 @@ export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products 
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} tickFormatter={(value) => `$${value}`} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} tickFormatter={(value) => `$${ value } `} />
               <Tooltip
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
               />
