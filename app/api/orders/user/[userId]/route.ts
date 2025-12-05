@@ -8,7 +8,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
         const [orders] = await pool.query<RowDataPacket[]>('SELECT * FROM orders WHERE buyer_id = ? ORDER BY created_at DESC', [userId]);
 
         for (const order of orders) {
-            const [items] = await pool.query<RowDataPacket[]>('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+            const [items] = await pool.query<RowDataPacket[]>(
+                `SELECT oi.*, p.name, p.image as productImage 
+                 FROM order_items oi 
+                 JOIN products p ON oi.product_id = p.id 
+                 WHERE oi.order_id = ?`,
+                [order.id]
+            );
             order.items = items;
             order.shippingAddress = order.shipping_address_json;
         }

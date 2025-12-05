@@ -87,7 +87,7 @@ export interface Order {
     buyerUsername: string; // Added to link order to account
     customerName: string;
     date: string; // ISO format YYYY-MM-DD
-    status: 'Pending' | 'Shipped' | 'Delivered';
+    status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
     items: OrderItem[];
     shippingAddress: Address;
     subtotal: number;

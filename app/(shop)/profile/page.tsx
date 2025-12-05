@@ -14,6 +14,11 @@ export default function BuyerProfilePage() {
     const [profile, setProfile] = useState<BuyerProfile | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editBio, setEditBio] = useState('');
+    const [editImage, setEditImage] = useState<File | null>(null);
+    const [previewImage, setPreviewImage] = useState<string>('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -39,13 +44,91 @@ export default function BuyerProfilePage() {
             }
         };
 
-        fetchData();
+        if (user) {
+            fetchData();
+        } else {
+            // If no user initially, stop loading to trigger redirect effect
+            setLoading(false);
+        }
     }, [user]);
 
-    if (!user) {
-        router.push('/login');
-        return null;
-    }
+    useEffect(() => {
+        if (!user && !loading) {
+            router.push('/login');
+        }
+    }, [user, loading, router]);
+
+    useEffect(() => {
+        if (profile) {
+            setEditBio(profile.bio || '');
+            setPreviewImage(profile.avatar || 'https://via.placeholder.com/150');
+        }
+    }, [profile]);
+
+    const toggleOrder = (orderId: string) => {
+        setExpandedOrderId(prev => prev === orderId ? null : orderId);
+    };
+
+    const handleCancelOrder = async (orderId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to cancel this order?')) return;
+
+        try {
+            const res = await fetch(`${API_URL}/api/orders/${orderId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Cancelled' }),
+            });
+
+            if (res.ok) {
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Cancelled' } : o));
+                alert('Order cancelled successfully');
+            } else {
+                alert('Failed to cancel order');
+            }
+        } catch (error) {
+            console.error('Error cancelling order', error);
+            alert('Error cancelling order');
+        }
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setEditImage(file);
+            setPreviewImage(URL.createObjectURL(file));
+        }
+    };
+
+    const handleSaveProfile = async () => {
+        if (!user) return;
+        const formData = new FormData();
+        formData.append('bio', editBio);
+        if (editImage) {
+            formData.append('image', editImage);
+        } else {
+            formData.append('imageUrl', profile?.avatar || '');
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/api/profiles/buyer/${user.id}`, {
+                method: 'PUT',
+                body: formData,
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setProfile(prev => prev ? { ...prev, bio: editBio, avatar: data.avatar } : null);
+                setIsEditing(false);
+                alert('Profile updated successfully!');
+            } else {
+                alert('Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Error updating profile', error);
+            alert('Error updating profile');
+        }
+    };
 
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -62,24 +145,62 @@ export default function BuyerProfilePage() {
                 <div className="px-8 pb-8">
                     <div className="relative flex justify-between items-end -mt-12 mb-6">
                         <div className="flex items-end gap-6">
-                            <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-md overflow-hidden bg-white">
-                                <img src={profile.avatar || 'https://via.placeholder.com/150'} alt={profile.username} className="w-full h-full object-cover" />
+                            <div className="relative">
+                                <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-md overflow-hidden bg-white">
+                                    <img src={previewImage} alt={profile.username} className="w-full h-full object-cover" />
+                                </div>
+                                {isEditing && (
+                                    <label className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow-md cursor-pointer border border-slate-200 hover:bg-slate-50">
+                                        <Edit size={14} className="text-slate-600" />
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                                    </label>
+                                )}
                             </div>
                             <div className="mb-1">
                                 <h1 className="text-2xl font-bold text-slate-900">{profile.username}</h1>
                                 <p className="text-slate-500 text-sm">Member since {new Date(profile.joinDate).toLocaleDateString()}</p>
                             </div>
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                            <Edit size={16} /> Edit Profile
-                        </button>
+                        {isEditing ? (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="px-4 py-2 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveProfile}
+                                    className="px-4 py-2 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                            >
+                                <Edit size={16} /> Edit Profile
+                            </button>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="md:col-span-2 space-y-6">
                             <div>
                                 <h2 className="font-bold text-slate-900 mb-2">Bio</h2>
-                                <p className="text-slate-600 leading-relaxed">{profile.bio || 'No bio yet.'}</p>
+                                {isEditing ? (
+                                    <textarea
+                                        value={editBio}
+                                        onChange={(e) => setEditBio(e.target.value)}
+                                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                                        rows={4}
+                                        placeholder="Tell us about yourself..."
+                                    />
+                                ) : (
+                                    <p className="text-slate-600 leading-relaxed">{profile.bio || 'No bio yet.'}</p>
+                                )}
                             </div>
 
                             <div>
@@ -91,20 +212,54 @@ export default function BuyerProfilePage() {
                                         <p className="text-slate-500 italic">No orders yet.</p>
                                     ) : (
                                         orders.map(order => (
-                                            <div key={order.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-brand-600 font-bold border border-slate-100">
-                                                        #{order.id.slice(-4)}
+                                            <div
+                                                key={order.id}
+                                                className="bg-slate-50 rounded-xl border border-slate-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                                                onClick={() => toggleOrder(order.id)}
+                                            >
+                                                <div className="p-4 flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-brand-600 font-bold border border-slate-100">
+                                                            #{order.id.slice(-4)}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-slate-900">{order.items.length} items</p>
+                                                            <p className="text-xs text-slate-500">{new Date(order.date).toLocaleDateString()}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-bold text-slate-900">{order.items.length} items</p>
-                                                        <p className="text-xs text-slate-500">{new Date(order.date).toLocaleDateString()}</p>
+                                                    <div className="text-right">
+                                                        <p className="font-bold text-slate-900">${Number(order.total).toFixed(2)}</p>
+                                                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${order.status === 'Delivered' ? 'text-green-600 bg-green-100' : order.status === 'Cancelled' ? 'text-red-600 bg-red-100' : 'text-slate-600 bg-slate-200'}`}>{order.status}</span>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-slate-900">${order.total.toFixed(2)}</p>
-                                                    <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">{order.status}</span>
-                                                </div>
+
+                                                {expandedOrderId === order.id && (
+                                                    <div className="bg-white p-4 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                        <h4 className="font-bold text-sm text-slate-700 mb-3">Order Items</h4>
+                                                        <div className="space-y-3 mb-4">
+                                                            {order.items.map((item: any) => (
+                                                                <div key={item.id} className="flex justify-between items-center text-sm">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-medium text-slate-800">{item.quantity}x</span>
+                                                                        <span className="text-slate-600">{item.name || `Product #${item.product_id}`}</span>
+                                                                    </div>
+                                                                    <span className="text-slate-900 font-medium">${Number(item.price).toFixed(2)}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {order.status === 'Pending' && (
+                                                            <div className="flex justify-end pt-2 border-t border-slate-100">
+                                                                <button
+                                                                    onClick={(e) => handleCancelOrder(order.id, e)}
+                                                                    className="text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors border border-red-200"
+                                                                >
+                                                                    Cancel Order
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                     )}

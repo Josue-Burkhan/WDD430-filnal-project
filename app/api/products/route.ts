@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
         const [rows] = await pool.query(query);
         return NextResponse.json(rows);
     } catch (error: any) {
+        // Debugging: Write error to file (RE-RE-ENABLED)
+        const fs = require('fs');
+        fs.writeFileSync('debug_error.txt', `Error in GET /api/products: ${error.message}\nStack: ${error.stack}\nEnv DB_PASSWORD: ${process.env.DB_PASSWORD}\nEnv DB_HOST: ${process.env.DB_HOST}`);
         return NextResponse.json({ message: 'Error fetching products', error: error.message }, { status: 500 });
     }
 }
