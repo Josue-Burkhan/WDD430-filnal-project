@@ -3,6 +3,7 @@ import { Product, Sale, SalesStat, SellerProfile, Order, Review, BuyerProfile, U
 
 export const MOCK_SELLERS: SellerProfile[] = [
     {
+        user_id: '1',
         username: 'admin',
         bio: 'Passionate artisan specializing in sustainable, handcrafted goods. I believe in quality over quantity and putting a piece of my soul into every creation.',
         avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200',
@@ -15,6 +16,7 @@ export const MOCK_SELLERS: SellerProfile[] = [
         tags: ['Sustainable', 'Handmade', 'Eco-Friendly']
     },
     {
+        user_id: '3',
         username: 'SarahCrafts',
         bio: 'Weaving dreams into reality. Specializing in high-quality textiles and knitwear using locally sourced wool.',
         avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
@@ -27,6 +29,7 @@ export const MOCK_SELLERS: SellerProfile[] = [
         tags: ['Knitted', 'Wool', 'Cozy']
     },
     {
+        user_id: '4',
         username: 'WoodWorks',
         bio: 'Reclaiming history one piece of wood at a time. Custom furniture and home decor from reclaimed barn wood.',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',

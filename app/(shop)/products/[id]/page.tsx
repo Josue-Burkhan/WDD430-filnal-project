@@ -50,6 +50,7 @@ export default function ProductDetails() {
             setProduct(mappedProduct);
 
             setSeller({
+              user_id: data.seller_id,
               username: data.sellerName || 'Unknown',
               bio: 'Passionate artisan creating unique handcrafted items.',
               avatar: data.sellerAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=100',

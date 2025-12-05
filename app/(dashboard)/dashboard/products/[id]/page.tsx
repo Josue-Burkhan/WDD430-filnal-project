@@ -31,7 +31,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                         image: data.image,
                         category: 'General',
                         stock: data.stock,
-                        rating: 0,
                         reviews: data.reviews || [],
                         isActive: Boolean(data.is_active)
                     };
