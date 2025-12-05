@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../../lib/auth';
 import { Order } from '../../../../server/types';
 import { Orders } from '../../../../components/dashboard/Orders';
+import { API_URL } from '../../../../lib/config';
 
 export default function OrdersPage() {
     const { user } = useAuth();
@@ -14,7 +15,7 @@ export default function OrdersPage() {
         const fetchOrders = async () => {
             if (!user) return;
             try {
-                const res = await fetch(`http://localhost:5000/api/orders/seller/${user.id}`);
+                const res = await fetch(`${API_URL}/api/orders/seller/${user.id}`);
                 if (res.ok) {
                     const data = await res.json();
                     const fetchedOrders = data.map((o: any) => {

@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../../lib/auth';
 import { ProductForm } from '../../../../../components/dashboard/ProductForm';
+import { API_URL } from '../../../../../lib/config';
 
 export default function AddProductPage() {
     const router = useRouter();
@@ -11,7 +12,7 @@ export default function AddProductPage() {
 
     const handleSave = async (productData: any) => {
         try {
-            const res = await fetch('http://localhost:5000/api/products', {
+            const res = await fetch(`${API_URL}/api/products`, {
                 method: 'POST',
                 body: productData
             });

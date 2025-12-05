@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, BuyerProfile, SellerProfile } from '../server/types';
+import { API_URL } from './config';
 
 interface AuthContextType {
     user: User | null;
@@ -24,7 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             if (token) {
                 try {
-                    const res = await fetch('http://localhost:5000/api/users/me', {
+                    const res = await fetch(`${API_URL}/api/users/me`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                     if (res.ok) {
@@ -43,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const login = async (email: string, password: string, rememberMe: boolean) => {
-        const res = await fetch('http://localhost:5000/api/users/login', {
+        const res = await fetch(`${API_URL}/api/users/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -80,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const payload = { id, username, email, password, role, ...additionalData };
         console.log('Sending register payload:', payload);
 
-        const res = await fetch('http://localhost:5000/api/users/register', {
+        const res = await fetch(`${API_URL}/api/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

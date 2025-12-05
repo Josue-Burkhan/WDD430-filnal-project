@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { User, Package, MapPin, Edit, Settings } from 'lucide-react';
 import { useAuth } from '../../../lib/auth';
 import { BuyerProfile, Order } from '../../../server/types';
+import { API_URL } from '../../../lib/config';
 
 export default function BuyerProfilePage() {
     const router = useRouter();
@@ -19,14 +20,14 @@ export default function BuyerProfilePage() {
             if (!user) return;
             try {
                 // Fetch Profile
-                const profileRes = await fetch(`http://localhost:5000/api/profiles/buyer/${user.id}`);
+                const profileRes = await fetch(`${API_URL}/api/profiles/buyer/${user.id}`);
                 if (profileRes.ok) {
                     const profileData = await profileRes.json();
                     setProfile(profileData);
                 }
 
                 // Fetch Orders
-                const ordersRes = await fetch(`http://localhost:5000/api/orders/user/${user.id}`);
+                const ordersRes = await fetch(`${API_URL}/api/orders/user/${user.id}`);
                 if (ordersRes.ok) {
                     const ordersData = await ordersRes.json();
                     setOrders(ordersData);

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Menu, Search, Plus, X } from 'lucide-react';
 import { useAuth } from '../../../lib/auth';
 import { Sidebar } from '../../../components/dashboard/Sidebar';
+import { API_URL } from '../../../lib/config';
 
 import Link from 'next/link';
 
@@ -35,7 +36,7 @@ export default function DashboardLayout({
     const fetchProfile = async () => {
         if (user && user.role === 'seller') {
             try {
-                const res = await fetch(`http://localhost:5000/api/profiles/seller/id/${user.id}`);
+                const res = await fetch(`${API_URL}/api/profiles/seller/id/${user.id}`);
                 if (res.ok) {
                     const data = await res.json();
                     setSellerProfile(data);

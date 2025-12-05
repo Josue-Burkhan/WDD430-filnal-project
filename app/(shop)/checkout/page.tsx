@@ -7,6 +7,7 @@ import { CreditCard, MapPin, Truck, CheckCircle, ArrowLeft, Lock } from 'lucide-
 import { useCart } from '../../../lib/cart';
 import { useAuth } from '../../../lib/auth';
 import { Order, Address } from '../../../server/types';
+import { API_URL } from '../../../lib/config';
 import { useToast } from '../../../components/ui/Toast';
 
 export default function Checkout() {
@@ -44,7 +45,7 @@ export default function Checkout() {
         const fetchAddress = async () => {
             if (user) {
                 try {
-                    const res = await fetch(`http://localhost:5000/api/profiles/buyer/${user.id}`);
+                    const res = await fetch(`${API_URL}/api/profiles/buyer/${user.id}`);
                     if (res.ok) {
                         const data = await res.json();
                         if (data.shippingAddress) {
@@ -114,7 +115,7 @@ export default function Checkout() {
                 }))
             };
 
-            const res = await fetch('http://localhost:5000/api/orders', {
+            const res = await fetch(`${API_URL}/api/orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData)

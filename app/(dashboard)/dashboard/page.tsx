@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../lib/auth';
 import { Product, Sale, Order, SalesStat } from '../../../server/types';
 import { Overview } from '../../../components/dashboard/Overview';
+import { API_URL } from '../../../lib/config';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -20,8 +21,8 @@ export default function Dashboard() {
       try {
         // 1. Fetch Products
         const productsEndpoint = user.role === 'admin'
-          ? 'http://localhost:5000/api/products'
-          : `http://localhost:5000/api/products/seller/${user.id}`;
+          ? `${API_URL}/api/products`
+          : `${API_URL}/api/products/seller/${user.id}`;
 
         const productsRes = await fetch(productsEndpoint);
         let fetchedProducts: Product[] = [];
@@ -44,8 +45,8 @@ export default function Dashboard() {
         }
 
         const ordersEndpoint = user.role === 'admin'
-          ? `http://localhost:5000/api/orders/seller/${user.id}`
-          : `http://localhost:5000/api/orders/seller/${user.id}`;
+          ? `${API_URL}/api/orders/seller/${user.id}`
+          : `${API_URL}/api/orders/seller/${user.id}`;
 
         const ordersRes = await fetch(ordersEndpoint);
         let fetchedOrders: Order[] = [];

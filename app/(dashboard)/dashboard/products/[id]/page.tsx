@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../../lib/auth';
 import { ProductForm } from '../../../../../components/dashboard/ProductForm';
 import { Product } from '../../../../../server/types';
+import { API_URL } from '../../../../../lib/config';
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -18,7 +19,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-                const res = await fetch(`http://localhost:5000/api/products/${id}`);
+                const res = await fetch(`${API_URL}/api/products/${id}`);
                 if (res.ok) {
                     const data = await res.json();
                     // Map data
@@ -54,7 +55,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const handleSave = async (productData: any) => {
         try {
             const formDataId = productData.get('id');
-            const res = await fetch(`http://localhost:5000/api/products/${formDataId}`, {
+            const res = await fetch(`${API_URL}/api/products/${formDataId}`, {
                 method: 'PUT',
                 body: productData
             });

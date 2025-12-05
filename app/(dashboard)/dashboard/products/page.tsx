@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../lib/auth';
 import { Product } from '../../../../server/types';
 import { Inventory } from '../../../../components/dashboard/Inventory';
+import { API_URL } from '../../../../lib/config';
 
 export default function InventoryPage() {
     const router = useRouter();
@@ -16,8 +17,8 @@ export default function InventoryPage() {
             const fetchProducts = async () => {
                 try {
                     const endpoint = user.role === 'admin'
-                        ? 'http://localhost:5000/api/products'
-                        : `http://localhost:5000/api/products/seller/${user.id}`;
+                        ? `${API_URL}/api/products`
+                        : `${API_URL}/api/products/seller/${user.id}`;
 
                     const res = await fetch(endpoint);
                     if (res.ok) {
@@ -49,7 +50,7 @@ export default function InventoryPage() {
     const handleDeleteProduct = async (id: string) => {
         if (confirm('Are you sure you want to delete this product?')) {
             try {
-                const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+                const res = await fetch(`${API_URL}/api/products/${id}`, {
                     method: 'DELETE'
                 });
                 if (res.ok) {
@@ -77,7 +78,7 @@ export default function InventoryPage() {
                 is_active: !product.isActive
             };
 
-            const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+            const res = await fetch(`${API_URL}/api/products/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

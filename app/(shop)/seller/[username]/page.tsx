@@ -8,6 +8,7 @@ import { ProductCard } from '../../../../components/ProductCard';
 
 import { useAuth } from '../../../../lib/auth';
 import { useToast } from '../../../../components/ui/Toast';
+import { API_URL } from '../../../../lib/config';
 
 export default function SellerProfilePage() {
     const params = useParams();
@@ -24,7 +25,7 @@ export default function SellerProfilePage() {
             const fetchData = async () => {
                 try {
                     // Fetch Profile
-                    const profileRes = await fetch(`http://localhost:5000/api/profiles/seller/${params.username}`);
+                    const profileRes = await fetch(`${API_URL}/api/profiles/seller/${params.username}`);
                     if (profileRes.ok) {
                         const profileData = await profileRes.json();
                         setProfile({
@@ -42,7 +43,7 @@ export default function SellerProfilePage() {
                         });
 
                         // Fetch Seller Products
-                        const productsRes = await fetch(`http://localhost:5000/api/products/seller/${profileData.user_id}`);
+                        const productsRes = await fetch(`${API_URL}/api/products/seller/${profileData.user_id}`);
                         if (productsRes.ok) {
                             const productsData = await productsRes.json();
                             // Map to Product interface
@@ -87,7 +88,7 @@ export default function SellerProfilePage() {
         if (!profile) return;
 
         try {
-            const res = await fetch('http://localhost:5000/api/reviews/seller', {
+            const res = await fetch(`${API_URL}/api/reviews/seller`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

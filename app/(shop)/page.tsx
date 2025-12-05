@@ -7,6 +7,7 @@ import { ProductCard } from '../../components/ProductCard';
 import { Product } from '../../server/types';
 import { Search, Filter, ArrowUpDown, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../../lib/cart';
+import { API_URL } from '../../lib/config';
 
 // Mock data for initial load if API fails or for static generation
 const MOCK_PRODUCTS: Product[] = [
@@ -51,7 +52,7 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/products');
+        const res = await fetch(`${API_URL}/api/products`);
         if (res.ok) {
           const data = await res.json();
           const mappedProducts = data.map((p: any) => ({

@@ -6,6 +6,7 @@ import { Star, ShoppingBag, ArrowLeft, Heart, Share2, Truck, ShieldCheck, Messag
 import { Product, SellerProfile } from '../../../../server/types';
 import { useCart } from '../../../../lib/cart';
 import { useAuth } from '../../../../lib/auth';
+import { API_URL } from '../../../../lib/config';
 
 export default function ProductDetails() {
   const params = useParams();
@@ -31,7 +32,7 @@ export default function ProductDetails() {
     if (params.id) {
       const fetchProduct = async () => {
         try {
-          const res = await fetch(`http://localhost:5000/api/products/${params.id}`);
+          const res = await fetch(`${API_URL}/api/products/${params.id}`);
           if (res.ok) {
             const data = await res.json();
             // Store actual UUID in sellerId for comparison, use sellerName for display
@@ -63,7 +64,7 @@ export default function ProductDetails() {
               tags: ['Handmade', 'Artisan']
             });
 
-            const reviewsRes = await fetch(`http://localhost:5000/api/reviews/product/${params.id}`);
+            const reviewsRes = await fetch(`${API_URL}/api/reviews/product/${params.id}`);
             if (reviewsRes.ok) {
               const reviewsData = await reviewsRes.json();
               setReviews(reviewsData);
@@ -116,7 +117,7 @@ export default function ProductDetails() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/reviews', {
+      const res = await fetch(`${API_URL}/api/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -131,7 +132,7 @@ export default function ProductDetails() {
 
       if (res.ok) {
         alert('Review submitted!');
-        const reviewsRes = await fetch(`http://localhost:5000/api/reviews/product/${product?.id}`);
+        const reviewsRes = await fetch(`${API_URL}/api/reviews/product/${product?.id}`);
         if (reviewsRes.ok) {
           const reviewsData = await reviewsRes.json();
           setReviews(reviewsData);

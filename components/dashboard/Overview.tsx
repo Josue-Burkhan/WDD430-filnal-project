@@ -2,6 +2,7 @@ import React from 'react';
 import { DollarSign, TrendingUp, Package, BarChart3, AlertTriangle, Clock, ArrowRight, Box } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Sale, SalesStat, Product, Order, User } from '../../server/types';
+import { API_URL } from '../../lib/config';
 
 interface OverviewProps {
   sales: Sale[];
@@ -27,7 +28,7 @@ export const Overview: React.FC<OverviewProps> = ({ sales, salesStats, products 
     const fetchStats = async () => {
       if (!user) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/orders/stats/${user.id}?range=${timeRange}`);
+        const res = await fetch(`${API_URL}/api/orders/stats/${user.id}?range=${timeRange}`);
         if (res.ok) {
           const data = await res.json();
           setChartData(data);

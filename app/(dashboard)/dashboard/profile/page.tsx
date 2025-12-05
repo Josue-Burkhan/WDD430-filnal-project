@@ -5,6 +5,7 @@ import { useAuth } from '../../../../lib/auth';
 import { SellerProfile } from '../../../../server/types';
 import { useToast } from '../../../../components/ui/Toast';
 import { ProfileSettings } from '../../../../components/dashboard/ProfileSettings';
+import { API_URL } from '../../../../lib/config';
 
 export default function ProfilePage() {
     const { user } = useAuth();
@@ -16,7 +17,7 @@ export default function ProfilePage() {
         const fetchProfile = async () => {
             if (user) {
                 try {
-                    const res = await fetch(`http://localhost:5000/api/profiles/seller/id/${user.id}`);
+                    const res = await fetch(`${API_URL}/api/profiles/seller/id/${user.id}`);
                     if (res.ok) {
                         const data = await res.json();
                         setProfile(data);
@@ -50,7 +51,7 @@ export default function ProfilePage() {
                 formData.append('bannerImage', updatedProfile.bannerImage || '');
             }
 
-            const res = await fetch(`http://localhost:5000/api/profiles/seller/${user.id}`, {
+            const res = await fetch(`${API_URL}/api/profiles/seller/${user.id}`, {
                 method: 'PUT',
                 body: formData
             });
