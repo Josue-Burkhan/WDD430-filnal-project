@@ -1,6 +1,5 @@
-```
 import React from 'react';
-import { DollarSign, Package, ShoppingCart, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
+import { DollarSign, Package, ShoppingCart, TrendingUp, TrendingDown, ArrowRight, AlertTriangle, Clock, Box, BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Sale, SalesStat, Product, Order, User } from '../../server/types';
@@ -14,7 +13,7 @@ interface OverviewProps {
   user: User;
 }
 
-export default function Overview({ sales, salesStats, products = [], orders = [], user }: OverviewProps) {
+export function Overview({ sales, salesStats, products = [], orders = [], user }: OverviewProps) {
   const router = useRouter();
   const totalRevenue = sales.reduce((sum, sale) => sum + sale.amount, 0);
   const totalSales = sales.length;
@@ -31,7 +30,7 @@ export default function Overview({ sales, salesStats, products = [], orders = []
     const fetchStats = async () => {
       if (!user) return;
       try {
-        const res = await fetch(`${ API_URL } /api/orders / stats / ${ user.id }?range = ${ timeRange } `);
+        const res = await fetch(`${API_URL}/api/orders/stats/${user.id}?range=${timeRange}`);
         if (res.ok) {
           const data = await res.json();
           setChartData(data);
@@ -225,7 +224,7 @@ export default function Overview({ sales, salesStats, products = [], orders = []
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} tickFormatter={(value) => `$${ value } `} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} tickFormatter={(value) => `$${value}`} />
               <Tooltip
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
               />
